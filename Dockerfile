@@ -1,4 +1,4 @@
-FROM openjdk:21
-EXPOSE 8080
-ADD target/springboot-github-action.jar springboot-github-action.jar
-ENTRYPOINT ["java","-jar","/springboot-github-action.jar"]
+FROM amazoncorretto:21
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} springboot-github-action.jar
+ENTRYPOINT ["java", "-jar", "/springboot-github-action.jar"]
