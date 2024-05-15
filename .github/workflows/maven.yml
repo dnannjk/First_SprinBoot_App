@@ -78,7 +78,7 @@ jobs:
       #   run: aws eks --region us-east-1 update-kubeconfig --name springboot-github-workflow
 
       - name: Deploy pod
-        run: kubectl apply -f ./k8s.yaml
+        run: kubectl apply -f ./k8s.yaml --validate=false
 
       - name: Expose pod as service
         run: kubectl expose pod springboot-github-workflow-deployment --port=80 --target-port=8080 --type=LoadBalancer
