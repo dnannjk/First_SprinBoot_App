@@ -6,7 +6,47 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: CICD Project Flow
+# name: CICD Project Flow
+
+# on:
+#   push:
+#     branches: [ "master" ]
+#   pull_request:
+#     branches: [ "master" ]
+
+# jobs:
+#   docker-image-dev:
+#     runs-on: ubuntu-latest
+#     # container: 
+#     #   image: 767398147229.dkr.ecr.us-east-1.amazonaws.com/springboot-github-workflow-deployment
+#     #   credentials:
+#     #     username: AWS
+#     #     password: "${{ secrets.AWS_ECR_PASSWORD }}"
+#     #   options: --user root
+#     steps:
+#       - name: Login to Amazon ECR
+#         run: |
+#           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 767398147229.dkr.ecr.us-east-1.amazonaws.com
+#         env:
+#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+#       # - name: Login to ECR
+#       #   run: |
+#       #     aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 767398147229.dkr.ecr.us-east-1.amazonaws.com
+      
+#       - name: Checkout
+#         uses: actions/checkout@v3
+
+#       - name: Docker build and push DEV
+#         id: docker-build-and-push-dev
+#         run: |
+#           docker build -t springboot-github-workflow-deployment:latest .
+#           docker tag springboot-github-workflow-deployment:latest 767398147229.dkr.ecr.us-east-1.amazonaws.com/springboot-github-workflow-deployment:latest
+#           docker push 767398147229.dkr.ecr.us-east-1.amazonaws.com/springboot-github-workflow-deployment:latest
+#         working-directory: ../Dockerfile
+
+name: Build and Push Docker Image
 
 on:
   push:
@@ -15,27 +55,30 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build:
-
+  build_and_push:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 21
-      uses: actions/setup-java@v3
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: maven
-    - name: Build with Maven
-      run: mvn clean install
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: Login to Amazon ECR
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 767398147229.dkr.ecr.us-east-1.amazonaws.com
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      
+      - name: Build Docker image
+        run: |
+          docker build -t springboot-github-workflow-deployment .
+        working-directory: .
 
-    - name: Build & push Docker image
-      uses: mr-smithers-excellent/docker-build-push@v6
-      with:
-        image: dnannajk/springboot-github-action
-        tags: latest
-        registry: docker.io
-        dockerfile: Dockerfile
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Tag Docker image
+        run: |
+          docker tag springboot-github-workflow-deployment:latest 767398147229.dkr.ecr.us-east-1.amazonaws.com/springboot-github-workflow-deployment:latest
+        working-directory: .
+
+      - name: Push Docker image to ECR
+        run: |
+          docker push 767398147229.dkr.ecr.us-east-1.amazonaws.com/springboot-github-workflow-deployment:latest
+        
