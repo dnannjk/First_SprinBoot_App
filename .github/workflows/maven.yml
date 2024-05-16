@@ -14,10 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         
-      - name: Create Amazon EKS cluster
-        run: |
-          eksctl create cluster --name springboot-github-workflow --version 1.28 --nodes=1 --node-type=t2.small --region us-east-1
-
       - name: Configure kubectl for Amazon EKS cluster
         run: aws eks --region us-east-1 update-kubeconfig --name springboot-github-workflow
 
