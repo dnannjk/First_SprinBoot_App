@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springboot-github-workflow-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+        - name: myapp
+          image: 767398147229.dkr.ecr.us-east-1.amazonaws.com/springboot-github-workflow-deployment:latest
+          ports:
+            - containerPort: 8080
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: springboot-github-workflow-service
+spec:
+  selector:
+    app: myapp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer
