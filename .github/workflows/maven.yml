@@ -1,12 +1,4 @@
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: CICD Project Flow
+name: Build and Push Docker Springboot Image
 
 on:
   push:
@@ -15,27 +7,47 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
+  build_and_push:
+    runs-on: demo
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 21
-      uses: actions/setup-java@v3
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: maven
-    - name: Build with Maven
-      run: mvn clean install
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Build & push Docker image
-      uses: mr-smithers-excellent/docker-build-push@v6
-      with:
-        image: dnannajk/springboot-github-action
-        tags: latest
-        registry: docker.io
-        dockerfile: Dockerfile
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Set up JDK 17 
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'corretto'
+          java-version: '17'
+          cache: 'maven'
+          
+      - name: Install Maven
+        run: mvn clean install
+
+      - name: Install Docker
+        run: |
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+      - name: Install Docker Buildx
+        run: |
+          docker buildx create --name mybuilder
+          docker buildx use mynewappbuilder
+          docker buildx inspect --bootstrap
+
+      - name: Print $USER
+        run: echo "The value of \$USER is $USER"
+
+      - name: Add GitHub Actions runner user to the docker group
+        run: sudo usermod -aG docker ${{ github.actor }}
+        
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 767398147229.dkr.ecr.us-east-1.amazonaws.com
+          docker buildx build --platform linux/amd64 -t my-app:latest .
+          docker tag my-app:latest 767398147229.dkr.ecr.us-east-1.amazonaws.com/springboot-github-workflow-deployment:latest
+          docker buildx build --platform linux/amd64 -t my-app:latest --push .
+
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
