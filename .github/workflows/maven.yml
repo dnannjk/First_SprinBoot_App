@@ -20,20 +20,20 @@ jobs:
           distribution: 'corretto'
           java-version: '17'
           cache: 'maven'
+      
+      - name: Install Maven
+        run: |
+          sudo apt-get install -y maven
           
       - name: Install Maven
         run: mvn clean install
 
       - name: Install Docker
         run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
           sudo systemctl start docker
           sudo systemctl enable docker
-
-      - name: Install Docker Buildx
-        run: |
-          docker buildx create --name mynewappbuilder7
-          docker buildx use mynewappbuilder7
-          docker buildx inspect --bootstrap
 
       - name: Print $USER
         run: echo "The value of \$USER is $USER"
@@ -43,11 +43,10 @@ jobs:
         
       - name: Build and push Docker image to Amazon ECR Public
         run: |
-          aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/y6y7n3n4
-          docker buildx build --platform linux/amd64 -t myapp1:latest --push .
-          docker tag myapp1:latest public.ecr.aws/y6y7n3n4/myapp1:latest
-          docker push dnannajk/springboot-github-action:myapp1:latest
-          docker push public.ecr.aws/y6y7n3n4/myapp1:latest
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 767398147229.dkr.ecr.us-east-1.amazonaws.com         
+          docker build -t gitworkflowrepo .
+          docker tag gitworkflowrepo:latest 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:latest
+          docker push 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:latest
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
