@@ -8,7 +8,7 @@ on:
 
 jobs:
   build_and_push:
-    runs-on: demo
+    runs-on: springbootrunner
 
     steps:
       - name: Checkout code
@@ -53,12 +53,44 @@ jobs:
           sudo docker push 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${IMAGE_TAG}
 
         
-      - name: Build and push Docker image to Amazon ECR Public
-        run: |
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 767398147229.dkr.ecr.us-east-1.amazonaws.com         
-          docker build -t gitworkflowrepo .
-          docker tag gitworkflowrepo:latest 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:latest
-          docker push 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:latest
+  deploy:
+    runs-on: springbootrunner
+    needs: build_and_push  
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # - name: Set up AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v3
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: us-east-1
+
+      # - name: Install kubectl
+      # - name: Install Argo CD CLI
+      # - name: Install eksctl
+      # - name: Set up AWS credentials
+      # - name: Create Amazon EKS cluster
+      # - name: Wait for EKS Cluster
+      # - name: Configure kubectl
+
+      # - name: Deploy application with Argo CD
+      #   run: |
+      #     kubectl apply -f k8s.yaml
+      #     kubectl apply -f argocd-app.yaml
+
+      # - name: Deploy application with Argo CD
+      #   run: |
+      #     kubectl apply -f k8s.yaml --validate=false
+
+      # - name: Configure kubectl for Amazon EKS cluster
+      #   run: aws eks --region us-east-1 update-kubeconfig --name springboot-github-workflow-cluster
+
+      - name: Deploy pod
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          IMAGE_TAG: ${{ needs.build_and_push.outputs.IMAGE_TAG }}
+        run: |
+          sed -i "s|767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:latest|767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${IMAGE_TAG}|" k8s.yaml
+          kubectl apply -f k8s.yaml
