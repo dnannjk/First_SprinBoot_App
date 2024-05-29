@@ -21,25 +21,37 @@ jobs:
           java-version: '17'
           cache: 'maven'
       
-      - name: Install Maven
-        run: |
-          sudo apt-get install -y maven
+      # - name: Install Maven
+      #   run: |
+      #     sudo apt-get install -y maven
           
-      - name: Install Maven
-        run: mvn clean install
+      - name: Build the Maven project
+        run: mvn package
 
-      - name: Install Docker
+      - name: Set IMAGE_TAG
+        id: set_image_tag
+        run: echo "::set-output name=IMAGE_TAG::$(date +%Y%m%d%H%M%S)"
+
+
+      # - name: Install Docker
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y docker.io
+      #     sudo systemctl start docker
+      #     sudo systemctl enable docker
+
+      - name: Build and push Docker image to Amazon ECR
+        id: build_and_push_image
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          IMAGE_TAG: ${{ steps.set_image_tag.outputs.IMAGE_TAG }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker.io
-          sudo systemctl start docker
-          sudo systemctl enable docker
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 767398147229.dkr.ecr.us-east-1.amazonaws.com 
+          sudo docker build -t gitworkflowrepo:${IMAGE_TAG} .
+          sudo docker tag gitworkflowrepo:${IMAGE_TAG} 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${IMAGE_TAG}
+          sudo docker push 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${IMAGE_TAG}
 
-      - name: Print $USER
-        run: echo "The value of \$USER is $USER"
-
-      - name: Add GitHub Actions runner user to the docker group
-        run: sudo usermod -aG docker ${{ github.actor }}
         
       - name: Build and push Docker image to Amazon ECR Public
         run: |
