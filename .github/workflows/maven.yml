@@ -1,12 +1,4 @@
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: CICD Project Flow
+name: Build and Push Docker Springboot Image
 
 on:
   push:
@@ -15,27 +7,62 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
+  build_and_push:
+    runs-on: self-hosted
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 21
-      uses: actions/setup-java@v3
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: maven
-    - name: Build with Maven
-      run: mvn clean install
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Build & push Docker image
-      uses: mr-smithers-excellent/docker-build-push@v6
-      with:
-        image: dnannajk/springboot-github-action
-        tags: latest
-        registry: docker.io
-        dockerfile: Dockerfile
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Build the Maven project
+        run: mvn package
+
+      - name: Set IMAGE_TAG
+        id: set_image_tag
+        run: echo "IMAGE_TAG=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+
+      - name: Log in to Amazon ECR
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin 767398147229.dkr.ecr.us-east-1.amazonaws.com
+
+      - name: Verify Docker login
+        run: docker info
+
+      - name: Build Docker image
+        run: sudo docker build -t gitworkflowrepo:${{ env.IMAGE_TAG }} .
+
+      - name: Tag Docker image
+        run: sudo docker tag gitworkflowrepo:${{ env.IMAGE_TAG }} 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${{ env.IMAGE_TAG }}
+
+      - name: Push Docker image to Amazon ECR
+        run: sudo docker push 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${{ env.IMAGE_TAG }}
+
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v3
+        with:
+          repository: dnannjk/my-gitops-repo
+          token: ${{ secrets.GITOPS_REPO_TOKEN }}
+          path: gitops-repo
+
+      - name: Update Kubernetes manifests
+        run: |
+          sed -i "s|image: 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:.*|image: 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${{ env.IMAGE_TAG }}|" gitops-repo/deployment.yaml
+
+      - name: Commit and push changes
+        run: |
+          cd gitops-repo
+          git config --global user.email "nannajkardeepali@gmail.com"
+          git config --global user.name "dnannjk"
+          git add .
+          git commit -m "Update image tag to ${{ env.IMAGE_TAG }}"
+          git push origin main
