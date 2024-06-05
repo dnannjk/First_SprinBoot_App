@@ -49,13 +49,13 @@ jobs:
 
 
         
-  # deploy:
-  #   runs-on: self-hosted
-  #   needs: build_and_push  
+  deploy:
+    runs-on: self-hosted
+    needs: build_and_push  
     
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
   #     # - name: Set up AWS credentials
   #     #   uses: aws-actions/configure-aws-credentials@v3
@@ -72,9 +72,9 @@ jobs:
   #     # - name: Wait for EKS Cluster
   #     # - name: Configure kubectl
 
-  #     # - name: Deploy application with Argo CD
-  #     #   run: |
-  #     #     kubectl apply -f k8s.yaml
+      - name: Deploy application
+        run: |
+          kubectl apply -f k8s.yaml
   #     #     kubectl apply -f argocd-app.yaml
 
   #     # - name: Deploy application with Argo CD
@@ -84,9 +84,9 @@ jobs:
   #     # - name: Configure kubectl for Amazon EKS cluster
   #     #   run: aws eks --region us-east-1 update-kubeconfig --name springboot-github-workflow-cluster
 
-  #     - name: Deploy pod
-  #       env:
-  #         IMAGE_TAG: ${{ needs.build_and_push.outputs.IMAGE_TAG }}
-  #       run: |
-  #         sed -i "s|767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:latest|767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${IMAGE_TAG}|" k8s.yaml
-  #         kubectl apply -f k8s.yaml
+      - name: Deploy pod
+        env:
+          IMAGE_TAG: ${{ needs.build_and_push.outputs.IMAGE_TAG }}
+        run: |
+          sed -i "s|767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:latest|767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${IMAGE_TAG}|" k8s.yaml
+          kubectl apply -f k8s.yaml
