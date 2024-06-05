@@ -72,9 +72,9 @@ jobs:
   #     # - name: Wait for EKS Cluster
   #     # - name: Configure kubectl
 
-      - name: Deploy application
-        run: |
-          kubectl apply -f k8s.yaml
+      # - name: Deploy application
+      #   run: |
+      #     kubectl apply -f k8s.yaml
   #     #     kubectl apply -f argocd-app.yaml
 
   #     # - name: Deploy application with Argo CD
