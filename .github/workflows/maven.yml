@@ -56,7 +56,7 @@ jobs:
 
       - name: Update Kubernetes manifests
         run: |
-          sed -i "s|image: 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:.*|image: 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${{ env.IMAGE_TAG }}|" dnannjk/my-gitops-repo/blob/main/deployment.yaml
+          sed -i "s|image: 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:.*|image: 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${{ env.IMAGE_TAG }}|" gitops-repo/deployment.yaml
 
       - name: Commit and push changes
         run: |
