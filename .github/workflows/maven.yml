@@ -47,46 +47,22 @@ jobs:
       - name: Push Docker image to Amazon ECR
         run: sudo docker push 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${{ env.IMAGE_TAG }}
 
-
-        
-  deploy:
-    runs-on: self-hosted
-    needs: build_and_push  
-    
-    steps:
-      - name: Checkout code
+      - name: Checkout GitOps repository
         uses: actions/checkout@v3
+        with:
+          repository: dnannjk/my-gitops-repo
+          token: ${{ secrets.GITOPS_REPO_TOKEN }}
+          path: gitops-repo
 
-  #     # - name: Set up AWS credentials
-  #     #   uses: aws-actions/configure-aws-credentials@v3
-  #     #   with:
-  #     #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #     #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #     #     aws-region: us-east-1
-
-  #     # - name: Install kubectl
-  #     # - name: Install Argo CD CLI
-  #     # - name: Install eksctl
-  #     # - name: Set up AWS credentials
-  #     # - name: Create Amazon EKS cluster
-  #     # - name: Wait for EKS Cluster
-  #     # - name: Configure kubectl
-
-      # - name: Deploy application
-      #   run: |
-      #     kubectl apply -f k8s.yaml
-  #     #     kubectl apply -f argocd-app.yaml
-
-  #     # - name: Deploy application with Argo CD
-  #     #   run: |
-  #     #     kubectl apply -f k8s.yaml --validate=false
-
-  #     # - name: Configure kubectl for Amazon EKS cluster
-  #     #   run: aws eks --region us-east-1 update-kubeconfig --name springboot-github-workflow-cluster
-
-      - name: Deploy pod
-        # env:
-        #   IMAGE_TAG: ${{ needs.build_and_push.outputs.IMAGE_TAG }}
+      - name: Update Kubernetes manifests
         run: |
-          sed -i "s|767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:latest|767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${{ env.IMAGE_TAG }}|" k8s.yaml
-          kubectl apply -f k8s.yaml
+          sed -i "s|image: 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:.*|image: 767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${{ env.IMAGE_TAG }}|" dnannjk/my-gitops-repo/blob/main/deployment.yaml
+
+      - name: Commit and push changes
+        run: |
+          cd gitops-repo
+          git config --global user.email "nannajkardeepali@gmail.com"
+          git config --global user.name "dnannjk"
+          git add .
+          git commit -m "Update image tag to ${{ env.IMAGE_TAG }}"
+          git push origin main
