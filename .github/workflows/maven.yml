@@ -66,3 +66,7 @@ jobs:
           git add .
           git commit -m "Update image tag to ${{ env.IMAGE_TAG }}"
           git push origin main
+
+      - name: Apply Kubernetes manifests
+        run: |
+            kubectl apply -f gitops-repo/deployment.yaml
