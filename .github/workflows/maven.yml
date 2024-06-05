@@ -85,8 +85,8 @@ jobs:
   #     #   run: aws eks --region us-east-1 update-kubeconfig --name springboot-github-workflow-cluster
 
       - name: Deploy pod
-        env:
-          IMAGE_TAG: ${{ needs.build_and_push.outputs.IMAGE_TAG }}
+        # env:
+        #   IMAGE_TAG: ${{ needs.build_and_push.outputs.IMAGE_TAG }}
         run: |
-          sed -i "s|767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:latest|767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${IMAGE_TAG}|" k8s.yaml
+          sed -i "s|767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:latest|767398147229.dkr.ecr.us-east-1.amazonaws.com/gitworkflowrepo:${{ env.IMAGE_TAG }}|" k8s.yaml
           kubectl apply -f k8s.yaml
